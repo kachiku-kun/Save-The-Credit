@@ -231,10 +231,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\Item.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Title.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Item.h" />
     <ClInclude Include="src\Common.hpp" />
     <ClInclude Include="src\Game.hpp" />
     <ClInclude Include="src\Title.hpp" />

@@ -1,83 +1,214 @@
-
+ï»¿
 # include "Game.hpp"
 
 Game::Game(const InitData& init)
 	: IScene(init)
 {
-	// ‰¡ (Scene::Width() / blockSize.x) ŒÂAc 5 ŒÂ‚ÌƒuƒƒbƒN‚ğ”z—ñ‚É’Ç‰Á‚·‚é
-	for (auto p : step(Size((Scene::Width() / blockSize.x), 5)))
-	{
-		m_blocks << Rect(p.x * blockSize.x, 60 + p.y * blockSize.y, blockSize);
+	player = Texture(U"img/eto_saru_dance.png", TextureDesc::Mipped);
+	credit =  Texture(U"img/school_text_tani.png", TextureDesc::Mipped);
+	ramen =  Texture(U"img/ramen_moyashi.png", TextureDesc::Mipped);
+	beer = Texture(U"img/drink_beer.png", TextureDesc::Mipped);
+	thesis = Texture(U"img/document_sotsugyou_ronbun_taba.png", TextureDesc::Mipped);
+
+	heart = Texture(Emoji(U"ğŸ’—"));
+	skull = Texture(Emoji(U"ğŸ’€"));
+}
+
+void Game::object_init() {
+	int32 kind = 0;
+	if (RandomBool(0.06)) {
+		kind = 1;
 	}
+
+	if (RandomBool(0.06)) {
+		kind = 3;
+	}
+
+	if (RandomBool(0.12)) {
+		kind = 2;
+	}
+
+	item << Item(Rect(Random(600), 0, size), kind);
 }
 
 void Game::update()
 {
-	// ƒpƒhƒ‹‚ğ‘€ì
-	m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 60, 10);
+	// ä¸€å®šæ™‚é–“çµŒéã—ãŸã‚‰ãƒãƒ•ãƒ‡ãƒãƒ•ã¯è§£é™¤
+	if (effectTime.sF() > 12.0) {
+		isDebuff = 0;
+		isBoost = 0;
 
-	// ƒ{[ƒ‹‚ğˆÚ“®
-	m_ball.moveBy(m_ballVelocity * Scene::DeltaTime());
+		effectTime.pause();
+	}
 
-	// ƒuƒƒbƒN‚ğ‡‚Éƒ`ƒFƒbƒN
-	for (auto it = m_blocks.begin(); it != m_blocks.end(); ++it)
-	{
-		// ƒ{[ƒ‹‚ÆƒuƒƒbƒN‚ªŒğ·‚µ‚Ä‚¢‚½‚ç
-		if (it->intersects(m_ball))
-		{
-			// ƒ{[ƒ‹‚ÌŒü‚«‚ğ”½“]‚·‚é
-			(it->bottom().intersects(m_ball) || it->top().intersects(m_ball) ? m_ballVelocity.y : m_ballVelocity.x) *= -1;
+	// ä¸€å®šå‘¨æœŸã§ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ç”Ÿæˆã™ã‚‹
+	if (m_score > 100) {
+		if (flame % obj_time_fast == 0) {
+			object_init();
+		}
+	}
+	else if (m_score > 50) {
+		if (flame % obj_time_midium == 0) {
+			object_init();
+		}
+	}
+	else {
+		if (flame % obj_time_slow == 0) {
+			object_init();
+		}
+	}
 
-			// ƒuƒƒbƒN‚ğ”z—ñ‚©‚çíœiƒCƒeƒŒ[ƒ^‚ª–³Œø‚É‚È‚é‚Ì‚Å’ˆÓj
-			m_blocks.erase(it);
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ã‚’æ“ä½œ
+	// Aã‹LeftãŒæŠ¼ã•ã‚ŒãŸã‚‰å·¦ç§»å‹•
+	if (KeyA.pressed() || KeyLeft.pressed()) {
+		if (isBoost) {
+			m_player.x -= boost;
+		}
+		else if (isDebuff) {
+			m_player.x -= debuff;
+		}
+		else {
+			m_player.x -= player_speed;
+		}
+	}
+	// Dã‹RightãŒæŠ¼ã•ã‚ŒãŸã‚‰å³ç§»å‹•
+	if (KeyD.pressed() || KeyRight.pressed()) {
+		if (isBoost) {
+			m_player.x += boost;
+		}
+		else if (isDebuff) {
+			m_player.x += debuff;
+		}
+		else {
+			m_player.x += player_speed;
+		}
+	}
 
-			// ƒXƒRƒA‚ğ‰ÁZ
-			++m_score;
+	// ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ç§»å‹•
+	for (auto& item : item) {
+		item.move();
+	}
 
-			// ‚±‚êˆÈãƒ`ƒFƒbƒN‚µ‚È‚¢  
+	// ç”»é¢ã‹ã‚‰æ¶ˆãˆãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æ¶ˆå»
+	for (auto it = item.begin(); it != item.end(); ++it) {
+		if (it->rect.y > 600) {
+			// å–ã‚Šé€ƒã—ãŸã¨ãã®åŠ¹æœ
+			if (it->kind == 0) {
+				life--;
+			}
+			if (it->kind == 3) {
+				life = 0;
+			}
+
+			item.erase(it);
+
 			break;
 		}
 	}
 
-	// “Vˆä‚É‚Ô‚Â‚©‚Á‚½‚ç‚Í‚Ë•Ô‚é
-	if (m_ball.y < 0 && m_ballVelocity.y < 0)
-	{
-		m_ballVelocity.y *= -1;
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ã¨æ¥è§¦ã—ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æ¶ˆå»
+	for (auto it = item.begin(); it != item.end(); ++it) {
+		if (it->rect.intersects(m_player)) {
+			// å–ã£ãŸã¨ãã®åŠ¹æœ
+			// å˜ä½ã‚’å–ã£ãŸã‚‰2ç‚¹
+			if (it->kind == 0) {
+				m_score += 2;
+			}
+			// äºŒéƒã‚’å–ã£ãŸã‚‰ãƒ–ãƒ¼ã‚¹ãƒˆï¼Œã™ã§ã«ãƒ–ãƒ¼ã‚¹ãƒˆãªã‚‰ãƒ‡ãƒãƒ•
+			else if (it->kind == 1) {
+				if (isBoost) {
+					isBoost = 0;
+					isDebuff = 1;
+
+					effectTime.restart();
+				}
+				else {
+					isBoost = 1;
+					isDebuff = 0;
+
+					effectTime.restart();
+				}
+			}
+			// é…’ã‚’å–ã£ãŸã‚‰ãƒ‡ãƒãƒ•
+			else if (it->kind == 2) {
+				isBoost = 0;
+				isDebuff = 1;
+
+				effectTime.restart();
+			}
+			// å’è«–ã‚’å–ã£ãŸã‚‰4ç‚¹
+			else {
+				m_score += 4;
+			}
+
+			item.erase(it);
+			break;
+		}
 	}
 
-	if (m_ball.y > Scene::Height())
-	{
-		changeScene(State::Title);
+	// ãƒ©ã‚¤ãƒ•ãŒ0ã«ãªã£ãŸã‚‰çµ‚äº†
+	if (life <= 0) {
 		getData().highScore = Max(getData().highScore, m_score);
+
+		changeScene(State::Title);
 	}
 
-	// ¶‰E‚Ì•Ç‚É‚Ô‚Â‚©‚Á‚½‚ç‚Í‚Ë•Ô‚é
-	if ((m_ball.x < 0 && m_ballVelocity.x < 0) || (Scene::Width() < m_ball.x && m_ballVelocity.x > 0))
-	{
-		m_ballVelocity.x *= -1;
-	}
-
-	// ƒpƒhƒ‹‚É‚ ‚½‚Á‚½‚ç‚Í‚Ë•Ô‚é
-	if (m_ballVelocity.y > 0 && m_paddle.intersects(m_ball))
-	{
-		// ƒpƒhƒ‹‚Ì’†S‚©‚ç‚Ì‹——£‚É‰‚¶‚Ä‚Í‚Ë•Ô‚éŒü‚«‚ğ•Ï‚¦‚é
-		m_ballVelocity = Vec2((m_ball.x - m_paddle.center().x) * 10, -m_ballVelocity.y).setLength(speed);
-	}
+	flame++;
 }
 
 void Game::draw() const
 {
-	FontAsset(U"Score")(m_score).drawAt(Scene::Center().x, 30);
 
-	// ‚·‚×‚Ä‚ÌƒuƒƒbƒN‚ğ•`‰æ‚·‚é
-	for (const auto& block : m_blocks)
-	{
-		block.stretched(-1).draw(HSV(block.y - 40));
+	FontAsset(U"Score")(U"SCORE").drawAt(625, 30);
+	FontAsset(U"Score")(m_score).drawAt(725, 30);
+
+	FontAsset(U"Score")(U"LIFE").drawAt(50, 30);
+	if (life >= 1) {
+		heart.resized(50,50).drawAt(120,30);
+	}else{
+		skull.resized(50, 50).drawAt(120, 30);
 	}
 
-	// ƒ{[ƒ‹‚ğ•`‚­
-	m_ball.draw();
+	if (life >= 2) {
+		heart.resized(50, 50).drawAt(170, 30);
+	}
+	else {
+		skull.resized(50, 50).drawAt(170, 30);
+	}
 
-	// ƒpƒhƒ‹‚ğ•`‚­
-	m_paddle.draw();
+	if (life == 3) {
+		heart.resized(50, 50).drawAt(220, 30);
+	}
+	else {
+		skull.resized(50, 50).drawAt(220, 30);
+	}
+
+	if (isBoost) {
+		FontAsset(U"Score")(U"ï¼å„ªå‹ï¼").drawAt(Scene::Center().x, 30, Palette::Yellow);
+		FontAsset(U"Score")(12 - effectTime.s()).drawAt(Scene::Center().x, 60);
+	}
+	else if (isDebuff) {
+		FontAsset(U"Score")(U"ï¼äºŒæ—¥é…”ã„ï¼").drawAt(Scene::Center().x, 30, Palette::Red);
+		FontAsset(U"Score")(12 - effectTime.s()).drawAt(Scene::Center().x, 60);
+	}
+
+
+	// ã™ã¹ã¦ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æç”»ã™ã‚‹
+	for (const auto& item : item) {
+		if (item.kind == 0) {
+			item.rect(credit).draw();
+		}
+		else if (item.kind == 1) {
+			item.rect(ramen).draw();
+		}
+		else if (item.kind == 2) {
+			item.rect(beer).draw();
+		}
+		else {
+			item.rect(thesis).draw();
+		}
+	}
+
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ã‚’æã
+	m_player(player).draw();
 }

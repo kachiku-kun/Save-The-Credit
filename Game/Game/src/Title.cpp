@@ -30,7 +30,7 @@ void Title::update()
 
 void Title::draw() const
 {
-	const String titleText = U"ブロックくずし";
+	const String titleText = U"たんいをすくえ！";
 	const Vec2 center(Scene::Center().x, 120);
 	FontAsset(U"Title")(titleText).drawAt(center.movedBy(4, 6), ColorF(0.0, 0.5));
 	FontAsset(U"Title")(titleText).drawAt(center);
@@ -45,5 +45,5 @@ void Title::draw() const
 		.draw(Arg::top = ColorF(0.0, 0.0), Arg::bottom = ColorF(0.0, 0.5));
 
 	const int32 highScore = getData().highScore;
-	FontAsset(U"Score")(U"High score: {}"_fmt(highScore)).drawAt(Vec2(620, 550));
+	FontAsset(U"Score")(U"取得単位: {}"_fmt(highScore)).drawAt(Vec2(620, 550));
 }
